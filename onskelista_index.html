@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Familjens Önskelistor</title>
+  <style>
+    :root{--bg:#f6f8fb;--card:#ffffff;--accent:#4f46e5;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:var(--bg); color:#0f172a}
+    header{background:linear-gradient(90deg,#eef2ff, #ffffff); padding:18px 24px; display:flex; gap:16px; align-items:center}
+    .container{max-width:1000px; margin:24px auto; padding:0 16px}
+    h1{margin:0; font-size:20px}
+    .top-right{margin-left:auto; display:flex; gap:8px}
+    button{background:var(--accent); color:white; border:0; padding:8px 12px; border-radius:8px; cursor:pointer}
+    .secondary{background:white; color:var(--accent); border:1px solid rgba(79,70,229,0.15)}
+    .card{background:var(--card); border-radius:12px; padding:16px; box-shadow:0 2px 6px rgba(15,23,42,0.05);}
+    .grid{display:grid; grid-template-columns:1fr 320px; gap:18px}
+    input, textarea, select{width:100%; padding:8px; border-radius:8px; border:1px solid #e5e7eb}
+    label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px}
+    .small{font-size:13px; color:var(--muted)}
+    ul{padding-left:18px}
+    .user-badge{display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:var(--accent); font-weight:600}
+    .muted{color:var(--muted)}
+    .list-item{display:flex; justify-content:space-between; gap:12px; padding:10px; border-radius:8px; border:1px dashed #eef2ff; align-items:center}
+    .danger{background:#fff1f2; color:#b91c1c}
+    .link{color:var(--accent); text-decoration:none}
+    footer{margin:40px 0; text-align:center; color:var(--muted)}
+    .admin-badge{background:#fde68a; color:#92400e; padding:6px 8px; border-radius:8px}
+    .controls{display:flex; gap:8px; align-items:center}
+    .small-btn{padding:6px 8px; border-radius:8px; background:#f3f4f6; border:0; cursor:pointer}
+    .hidden{display:none}
+    @media (max-width:900px){.grid{grid-template-columns:1fr} .top-right{display:none}}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:12px">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.5 7.5L20.5 8.5L15.5 12.5L17 18L12 14.8L7 18L8.5 12.5L3.5 8.5L9.5 7.5L12 2Z" fill="#4f46e5"/></svg>
+      <div>
+        <h1>Familjens Önskelistor</h1>
+        <div class="small muted">En enkel sida för släkt och familj — du är administratör.</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <div id="currentUserDisplay" class="user-badge">Inloggad: ingen</div>
+      <button id="btnLogout" class="secondary">Logga ut</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <div>
+        <div class="card" id="authCard">
+          <div id="authForms">
+            <h3>Logga in eller registrera</h3>
+            <div style="display:flex; gap:8px; margin-top:12px">
+              <input id="inpUser" placeholder="Användarnamn (ex: pappa)" />
+              <input id="inpPass" placeholder="Lösenord" type="password" />
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px">
+              <button id="btnLogin">Logga in</button>
+              <button id="btnRegister" class="secondary">Registrera</button>
+            </div>
+            <hr style="margin:12px 0"/>
+            <div class="small muted">Admin: skriv in adminlösenord här för att öppna adminpanelen.</div>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <input id="inpAdminPass" placeholder="Admin-lösenord" type="password" />
+              <button id="btnAdminLogin" class="small-btn">Öppna admin</button>
+            </div>
+          </div>
+
+          <div id="adminPanel" class="hidden" style="margin-top:16px">
+            <h3>Adminpanel</h3>
+            <div class="small muted">Som admin kan du ta bort användare och redigera listor.</div>
+            <div style="margin-top:12px">
+              <label>Alla användare</label>
+              <div id="adminUsers"></div>
+            </div>
+            <div style="margin-top:12px">
+              <label>Alla listor</label>
+              <div id="adminLists"></div>
+            </div>
+            <div style="margin-top:12px">
+              <button id="btnCloseAdmin" class="secondary">Stäng admin</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px" class="card">
+          <h3>Skapa ny önskelista</h3>
+          <div id="createListForm">
+            <label>Titel</label>
+            <input id="newListTitle" placeholder="Ex: Julklappar 2025" />
+            <label style="margin-top:8px">Beskrivning (valfritt)</label>
+            <textarea id="newListDesc" rows="2" placeholder="Skriv en kort beskrivning..."></textarea>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <button id="btnCreateList">Skapa lista</button>
+              <button id="btnRefresh" class="small-btn">Uppdatera vy</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px" class="card">
+          <h3>Alla användares listor</h3>
+          <div id="allLists"></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <h3>Min profil</h3>
+          <div style="margin-top:8px">
+            <div class="muted">Inloggad användare:</div>
+            <div id="profileName" style="font-weight:700; margin-top:6px">Ingen</div>
+            <div style="margin-top:12px">
+              <label>Visa lista</label>
+              <select id="selectOwnLists"></select>
+              <div style="display:flex; gap:8px; margin-top:8px">
+                <button id="btnViewOwn" class="secondary">Visa</button>
+                <button id="btnDeleteOwn" class="small-btn danger">Ta bort lista</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px" class="card">
+          <h3>Lägg till önskning</h3>
+          <div id="addWishForm">
+            <label>Titel</label>
+            <input id="wishTitle" placeholder="Ex: Ski goggles" />
+            <label style="margin-top:8px">Länk (valfritt)</label>
+            <input id="wishLink" placeholder="https://..." />
+            <label style="margin-top:8px">Pris (valfritt)</label>
+            <input id="wishPrice" placeholder="350" />
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <button id="btnAddWish">Lägg till önskning</button>
+              <button id="btnClearWish" class="small-btn">Rensa</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px" class="card">
+          <h3>Tips</h3>
+          <ul>
+            <li class="small muted">Spara backup: kopiera webbläsarens "Local Storage" för säkerhetskopiering.</li>
+            <li class="small muted">För mer säkerhet: sätt upp ett riktigt backend och autentisering (t.ex. Firebase).</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <div id="viewArea" style="margin-top:18px"></div>
+
+    <footer>
+      © Familjens Önskelistor — enkel demo. Ändra adminlösenord i koden innan delning.
+    </footer>
+  </main>
+
+<script>
+// ----------------------------
+// Enkel single-file app utan server
+// Data lagras i localStorage under nyckeln 'wishAppData'
+// OBS: Detta är en demo. För riktig drift, använd en backend + autentisering.
+// ----------------------------
+
+const STORAGE_KEY = 'wishAppData_v1';
+const ADMIN_PASSWORD = 'byt-ut-det-här-admin123'; // Ändra detta innan du publicerar
+
+// Struktur:
+// { users: {username: {password, displayName}}, lists: {listId: {owner, title, desc, items: [{id,title,link,price,reservedBy}]}} }
+
+function loadData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw){
+    const init = { users: {}, lists: {} };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(init));
+    return init;
+  }
+  try{ return JSON.parse(raw); }catch(e){ console.error('korrupt data, reset'); const init = { users:{}, lists:{} }; localStorage.setItem(STORAGE_KEY, JSON.stringify(init)); return init; }
+}
+function saveData(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+let APP = loadData();
+let currentUser = null; // {username}
+let isAdmin = false;
+
+// Helpers
+function uid(prefix='id'){ return prefix + Math.random().toString(36).slice(2,9); }
+function el(q){ return document.querySelector(q); }
+function renderCurrentUser(){ const d = el('#currentUserDisplay'); d.textContent = currentUser ? 'Inloggad: ' + currentUser : 'Inloggad: ingen'; el('#profileName').textContent = currentUser ? currentUser : 'Ingen'; populateOwnLists(); }
+
+// Auth
+el('#btnRegister').addEventListener('click', ()=>{
+  const u = el('#inpUser').value.trim(); const p = el('#inpPass').value;
+  if(!u || !p){ alert('Användarnamn och lösenord krävs'); return; }
+  if(APP.users[u]){ alert('Användarnamnet finns redan'); return; }
+  APP.users[u] = { password: p };
+  saveData(APP);
+  alert('Registrerad — logga in nu');
+});
+
+el('#btnLogin').addEventListener('click', ()=>{
+  const u = el('#inpUser').value.trim(); const p = el('#inpPass').value;
+  if(!u || !p){ alert('Fyll i användarnamn och lösenord'); return; }
+  if(!APP.users[u] || APP.users[u].password !== p){ alert('Fel användarnamn eller lösenord'); return; }
+  currentUser = u; isAdmin = false; renderCurrentUser(); refreshAllLists();
+});
+
+el('#btnLogout').addEventListener('click', ()=>{ currentUser = null; isAdmin = false; renderCurrentUser(); refreshAllLists(); });
+
+el('#btnAdminLogin').addEventListener('click', ()=>{
+  const p = el('#inpAdminPass').value;
+  if(p === ADMIN_PASSWORD){ isAdmin = true; el('#adminPanel').classList.remove('hidden'); alert('Admin inloggad'); renderAdmin(); }
+  else{ alert('Fel admin-lösenord'); }
+});
+el('#btnCloseAdmin').addEventListener('click', ()=>{ isAdmin = false; el('#adminPanel').classList.add('hidden'); el('#inpAdminPass').value = ''; });
+
+// Create list
+el('#btnCreateList').addEventListener('click', ()=>{
+  if(!currentUser && !isAdmin){ alert('Du måste vara inloggad för att skapa en lista'); return; }
+  const title = el('#newListTitle').value.trim(); const desc = el('#newListDesc').value.trim();
+  if(!title){ alert('Namnge din lista'); return; }
+  const id = uid('list_');
+  APP.lists[id] = { owner: currentUser || 'admin', title, desc, items: [] };
+  saveData(APP); el('#newListTitle').value=''; el('#newListDesc').value=''; refreshAllLists(); populateOwnLists();
+});
+
+// Populate lists
+function refreshAllLists(){
+  const container = el('#allLists'); container.innerHTML = '';
+  const lists = APP.lists;
+  const keys = Object.keys(lists).sort((a,b)=> (lists[a].title||'').localeCompare(lists[b].title||''));
+  if(keys.length===0){ container.innerHTML = '<div class="small muted">Inga listor ännu.</div>'; return; }
+  keys.forEach(id=>{
+    const l = lists[id];
+    const wrap = document.createElement('div'); wrap.style.marginBottom='10px';
+    wrap.innerHTML = `
+      <div class="list-item">
+        <div>
+          <div style="font-weight:700">${escapeHtml(l.title)}</div>
+          <div class="small muted">Av: ${escapeHtml(l.owner)} ${l.desc? '— '+escapeHtml(l.desc): ''}</div>
+        </div>
+        <div class="controls">
+          <button class="small-btn" data-id="${id}" onclick="viewList('${id}')">Visa</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(wrap);
+  });
+}
+
+// View list
+window.viewList = function(listId){
+  const area = el('#viewArea'); const l = APP.lists[listId];
+  if(!l){ area.innerHTML = '<div class="card">Lista hittades inte</div>'; return; }
+  let html = `<div class="card"><h3>${escapeHtml(l.title)}</h3><div class="small muted">Av: ${escapeHtml(l.owner)}</div>`;
+  if(l.desc) html += `<p style="margin-top:8px">${escapeHtml(l.desc)}</p>`;
+  html += '<hr style="margin:12px 0" />';
+  if(l.items.length===0) html += '<div class="small muted">Inga önskningar tillsagda.</div>';
+  else{
+    html += '<div style="display:flex; flex-direction:column; gap:8px">';
+    l.items.forEach(it=>{
+      html += `<div class="list-item"><div><div style="font-weight:700">${escapeHtml(it.title)}</div><div class="small muted">${it.price? 'Pris: '+escapeHtml(it.price)+' kr':''} ${it.link? '— <a class="link" href="'+escapeHtml(it.link)+'" target="_blank">länk</a>':''}</div></div><div class="controls">`;
+      if(it.reservedBy) html += `<div class="small muted">Reserverad av ${escapeHtml(it.reservedBy)}</div>`;
+      else html += `<button class="small-btn" onclick="reserveItem('${listId}','${it.id}')">Reservera</button>`;
+      if((currentUser && (currentUser===l.owner)) || isAdmin) html += `<button class="small-btn" onclick="removeWish('${listId}','${it.id}')">Ta bort</button>`;
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+// Reserve item
+window.reserveItem = function(listId, itemId){
+  if(!currentUser){ const name = prompt('Skriv ditt namn för att reservera (ex: Mormor)'); if(!name) return; APP.lists[listId].items.find(i=>i.id===itemId).reservedBy = name; saveData(APP); viewList(listId); return; }
+  APP.lists[listId].items.find(i=>i.id===itemId).reservedBy = currentUser; saveData(APP); viewList(listId);
+}
+
+// Remove wish (owner or admin)
+window.removeWish = function(listId, itemId){
+  if(!confirm('Radera önskning?')) return;
+  const l = APP.lists[listId];
+  l.items = l.items.filter(i=>i.id!==itemId); saveData(APP); viewList(listId); refreshAllLists(); populateOwnLists(); renderAdmin();
+}
+
+// Add wish to currently selected own list
+el('#btnAddWish').addEventListener('click', ()=>{
+  const title = el('#wishTitle').value.trim(); if(!title){ alert('Skriv titel för önskningen'); return; }
+  const link = el('#wishLink').value.trim(); const price = el('#wishPrice').value.trim();
+  const sel = el('#selectOwnLists').value;
+  if(!sel){ alert('Välj en av dina listor i dropdownen'); return; }
+  const item = { id: uid('wish_'), title, link, price, reservedBy: null };
+  APP.lists[sel].items.push(item); saveData(APP); el('#wishTitle').value=''; el('#wishLink').value=''; el('#wishPrice').value=''; viewList(sel); refreshAllLists(); renderAdmin();
+});
+
+el('#btnClearWish').addEventListener('click', ()=>{ el('#wishTitle').value=''; el('#wishLink').value=''; el('#wishPrice').value=''; });
+
+// Populate own lists dropdown
+function populateOwnLists(){ const sel = el('#selectOwnLists'); sel.innerHTML = '<option value="">-- välj --</option>'; const keys = Object.keys(APP.lists); keys.forEach(k=>{ const l = APP.lists[k]; if(l.owner === currentUser){ const opt = document.createElement('option'); opt.value = k; opt.textContent = l.title; sel.appendChild(opt); }});
+}
+
+el('#btnViewOwn').addEventListener('click', ()=>{ const sel = el('#selectOwnLists').value; if(!sel){ alert('Välj en lista'); return; } viewList(sel); });
+
+el('#btnDeleteOwn').addEventListener('click', ()=>{
+  const sel = el('#selectOwnLists').value; if(!sel){ alert('Välj en lista att ta bort'); return; }
+  if(!confirm('Ta bort listan permanent?')) return;
+  delete APP.lists[sel]; saveData(APP); populateOwnLists(); refreshAllLists(); el('#viewArea').innerHTML='';
+});
+
+// Admin rendering & actions
+function renderAdmin(){ if(!isAdmin) return; const usersDiv = el('#adminUsers'); usersDiv.innerHTML = '';
+  Object.keys(APP.users).forEach(u=>{
+    const wrapper = document.createElement('div'); wrapper.style.display='flex'; wrapper.style.justifyContent='space-between'; wrapper.style.alignItems='center'; wrapper.style.marginBottom='6px';
+    wrapper.innerHTML = `<div>${escapeHtml(u)}</div><div><button class="small-btn" onclick="adminDeleteUser('${u}')">Ta bort</button></div>`;
+    usersDiv.appendChild(wrapper);
+  });
+  const listsDiv = el('#adminLists'); listsDiv.innerHTML = '';
+  Object.keys(APP.lists).forEach(id=>{
+    const l = APP.lists[id]; const w = document.createElement('div'); w.style.marginBottom='6px'; w.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center"><div>${escapeHtml(l.title)} — ${escapeHtml(l.owner)}</div><div><button class="small-btn" onclick="adminDeleteList('${id}')">Ta bort lista</button></div></div>`; listsDiv.appendChild(w);
+  });
+}
+window.adminDeleteUser = function(username){ if(!confirm('Ta bort användaren och alla deras listor?')) return; delete APP.users[username]; // delete their lists
+  Object.keys(APP.lists).forEach(id=>{ if(APP.lists[id].owner === username) delete APP.lists[id]; }); saveData(APP); renderAdmin(); refreshAllLists(); }
+window.adminDeleteList = function(listId){ if(!confirm('Ta bort listan permanent?')) return; delete APP.lists[listId]; saveData(APP); renderAdmin(); refreshAllLists(); }
+
+// Utility: escape
+function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+
+// Initial render
+renderCurrentUser(); refreshAllLists();
+
+// For convenience: export/import backup
+window.exportBackup = function(){ const data = JSON.stringify(APP); prompt('Kopiera hela texten nedan för backup:', data); }
+window.importBackup = function(){ const raw = prompt('Klistra in hela backup-texten här:'); if(!raw) return; try{ const parsed = JSON.parse(raw); APP = parsed; saveData(APP); alert('Import lyckades'); refreshAllLists(); renderAdmin(); populateOwnLists(); }catch(e){ alert('Gick inte att läsa JSON'); }}
+
+</script>
+</body>
+</html>
